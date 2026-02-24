@@ -41,6 +41,77 @@ describe('GET /users/:id', () => {
   });
 });
 
+describe('GET /users/:id/preferences', () => {
+  it('should return default preferences for a user', async () => {
+    const res = await request(app).get('/users/2/preferences');
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({
+      theme: 'light',
+      language: 'en',
+      notifications: true,
+    });
+  });
+});
+
+describe('PUT /users/:id/preferences', () => {
+  it('should update preferences with valid data', async () => {
+    const res = await request(app)
+      .put('/users/1/preferences')
+      .send({ theme: 'dark', language: 'fr', notifications: false });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({
+      theme: 'dark',
+      language: 'fr',
+      notifications: false,
+    });
+
+    const getRes = await request(app).get('/users/1/preferences');
+    expect(getRes.body).toEqual({
+      theme: 'dark',
+      language: 'fr',
+      notifications: false,
+    });
+  });
+
+  it('should return 400 for invalid theme', async () => {
+    const res = await request(app)
+      .put('/users/2/preferences')
+      .send({ theme: 'blue' });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toEqual({ error: 'Invalid theme: must be "light" or "dark"' });
+  });
+
+  it('should return 400 for invalid language', async () => {
+    const res = await request(app)
+      .put('/users/3/preferences')
+      .send({ language: 'english' });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toEqual({ error: 'Invalid language: must be a two-letter ISO 639-1 code' });
+  });
+
+  it('should return 400 for invalid notifications type', async () => {
+    const res = await request(app)
+      .put('/users/2/preferences')
+      .send({ notifications: 'yes' });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toEqual({ error: 'Invalid notifications: must be a boolean' });
+  });
+
+  it('should return 404 for a non-existent user', async () => {
+    const res = await request(app)
+      .put('/users/999/preferences')
+      .send({ theme: 'light' });
+
+    expect(res.statusCode).toBe(404);
+    expect(res.body).toEqual({ error: 'User with id 999 not found' });
+  });
+});
+
 describe('GET /health', () => {
   it('should return health status', async () => {
     const res = await request(app).get('/health');
