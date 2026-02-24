@@ -49,3 +49,75 @@ describe('GET /health', () => {
     expect(res.body).toEqual({ status: 'ok' });
   });
 });
+
+describe('GET /users/:id/preferences', () => {
+  it('should return default preferences for a valid user', async () => {
+    const res = await request(app).get('/users/1/preferences');
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ theme: 'light', language: 'en', notifications: true });
+  });
+
+  it('should return 404 for a non-existent user', async () => {
+    const res = await request(app).get('/users/999/preferences');
+
+    expect(res.statusCode).toBe(404);
+    expect(res.body).toHaveProperty('error');
+  });
+});
+
+describe('PUT /users/:id/preferences', () => {
+  it('should update preferences with valid data', async () => {
+    const res = await request(app)
+      .put('/users/2/preferences')
+      .send({ theme: 'dark', language: 'fr', notifications: false });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ theme: 'dark', language: 'fr', notifications: false });
+  });
+
+  it('should return 400 for an invalid theme', async () => {
+    const res = await request(app)
+      .put('/users/1/preferences')
+      .send({ theme: 'blue' });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toHaveProperty('error');
+  });
+
+  it('should return 400 for an invalid language', async () => {
+    const res = await request(app)
+      .put('/users/1/preferences')
+      .send({ language: 'english' });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toHaveProperty('error');
+  });
+
+  it('should return 400 for invalid notifications type', async () => {
+    const res = await request(app)
+      .put('/users/1/preferences')
+      .send({ notifications: 'yes' });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toHaveProperty('error');
+  });
+
+  it('should return 400 for an unknown preference field', async () => {
+    const res = await request(app)
+      .put('/users/1/preferences')
+      .send({ color: 'red' });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toHaveProperty('error');
+  });
+
+  it('should return 404 for a non-existent user', async () => {
+    const res = await request(app)
+      .put('/users/999/preferences')
+      .send({ theme: 'dark' });
+
+    expect(res.statusCode).toBe(404);
+    expect(res.body).toHaveProperty('error');
+  });
+});
