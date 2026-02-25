@@ -8,6 +8,16 @@ const users = [
   { id: 3, name: 'Charlie Lee', email: 'charlie@example.com' },
 ];
 
+// In-memory preferences store
+const preferences = {
+  1: { theme: 'light', language: 'en', notifications: true },
+  2: { theme: 'light', language: 'en', notifications: true },
+  3: { theme: 'light', language: 'en', notifications: true },
+};
+
+const VALID_THEMES = ['light', 'dark'];
+const LANGUAGE_REGEX = /^[a-z]{2}$/;
+
 // GET /users — list all users
 router.get('/', (req, res) => {
   res.json(users);
@@ -23,6 +33,59 @@ router.get('/:id', (req, res) => {
   }
 
   res.json(user);
+});
+
+// GET /users/:id/preferences — get preferences for a user
+router.get('/:id/preferences', (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const user = users.find((u) => u.id === id);
+
+  if (!user) {
+    return res.status(404).json({ error: `User with id ${id} not found` });
+  }
+
+  res.json(preferences[id]);
+});
+
+// PUT /users/:id/preferences — update preferences for a user
+router.put('/:id/preferences', (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const user = users.find((u) => u.id === id);
+
+  if (!user) {
+    return res.status(404).json({ error: `User with id ${id} not found` });
+  }
+
+  const validFields = ['theme', 'language', 'notifications'];
+
+  for (const key of Object.keys(req.body)) {
+    if (!validFields.includes(key)) {
+      return res.status(400).json({ error: `Unknown field: ${key}` });
+    }
+  }
+
+  const { theme, language, notifications } = req.body;
+
+  if (theme !== undefined) {
+    if (!VALID_THEMES.includes(theme)) {
+      return res.status(400).json({ error: 'Invalid theme: must be "light" or "dark"' });
+    }
+  }
+
+  if (language !== undefined) {
+    if (typeof language !== 'string' || !LANGUAGE_REGEX.test(language)) {
+      return res.status(400).json({ error: 'Invalid language: must be a valid ISO 639-1 code (e.g., "en", "fr")' });
+    }
+  }
+
+  if (notifications !== undefined) {
+    if (typeof notifications !== 'boolean') {
+      return res.status(400).json({ error: 'Invalid notifications: must be a boolean' });
+    }
+  }
+
+  preferences[id] = { ...preferences[id], ...req.body };
+  res.json(preferences[id]);
 });
 
 module.exports = router;
